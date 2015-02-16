@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{{wiki.name}} - {% if doc %}Editing {{doc.id}}{% else %}Editing new page{% end %}{% end %}
+
+{% block body %}
+<form id="edit" method="post" action="/wiki/{{url_escape(wiki.name)}}/doc{% if doc %}/{{doc.id}}{% end %}">
+  {% module xsrf_form_html() %}
+  <div class="editbuttons">
+    {% if doc %}
+    <a href="/wiki/{{url_escape(wiki.name)}}/doc/{{doc.id}}">Cancel</a>
+    {% end %}
+    <input type="submit" value="Save">
+  </div>
+
+  {% if doc %}
+  <textarea name="content">{{ doc.version.content }}</textarea>
+  {% else %}
+  <textarea name="content" codemirror-focus-end="true">{% if title != None %}title: {{title}}
+{% end %}</textarea>
+  {% end %}
+
+
+</form>
+{% end %}
+
+{% block sidebar %}
+{% include "wikisidebar.html" %}
+{% end %}

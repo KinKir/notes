@@ -1,0 +1,217 @@
+html, body {
+    font-family: "Times New Roman", "serif";
+    margin: 0; padding: 0;
+}
+
+#body {
+    width: 1000px;
+    padding: 1em 2em;
+    margin: 0;
+}
+#sidebar {
+    float: right;
+    width: 330px;
+    margin: 0;
+    box-sizing: border-box;
+    border: 1px solid #aaa;
+    border-width: 0 0 0 0px;
+}
+
+.sidebox {
+    margin: 0 0 10px 10px;
+    padding-top: 10px;
+}
+
+.sidebox ~ .sidebox {
+    border: 1px solid #6078BF;
+    border-width: 1px 0 0 0;
+}
+
+#main {
+    width: 650px;
+    float: left;
+}
+
+article {
+    margin-bottom: 1em;
+    border-radius: 3px;
+}
+article.version {
+    background: #ffe;
+}
+article.deleted {
+    background: #fee;
+}
+
+#main h1 {
+    font-size: 200%;
+    margin-top: 0;
+    margin-bottom: 0.2em;
+}
+
+p {
+
+}
+
+.actions {
+    float: right;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #eee;
+    padding: 0.2em 0.5em;
+}
+
+.bottom-actions {
+    font-size: 80%;
+}
+.bottom-actions ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+.bottom-actions li {
+    display: inline-block;
+}
+.bottom-actions li ~ li:before {
+    content: '| ';
+    color: #999;
+}
+.bottom-actions ul:before {
+    content: '( ';
+    color: #999;
+}
+.bottom-actions ul:after {
+    content: ' )';
+    color: #999;
+}
+.bottom-actions a:visited {
+    color: #00D;
+}
+
+.toc {
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #eee;
+    margin-left: 1em;
+    padding: 0.2em 1em;
+    display: inline-block;
+}
+.toctitle {
+    font-size: 90%;
+    font-weight: bold;
+    text-align: center;
+    display: block;
+}
+.toc ul {
+    padding-left: 1em;
+}
+
+.CodeMirror {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    height: auto;
+    line-height: 1.25;
+    background: #fffff0;
+}
+
+.cm-header { }
+.cm-header-1 { font-size: 140%; }
+.cm-header-2 { font-size: 130%; }
+.cm-header-3 { font-size: 120%; }
+.cm-header-4 { font-size: 115%; }
+.cm-header-5 { font-size: 110%; }
+.cm-header-6 { font-size: 105%; }
+
+.cm-markdown-meta {
+    font-weight: bold;
+}
+.cm-markdown-meta-title {
+    font-weight: bold;
+    font-size: 150%;
+}
+
+.cm-formatting {
+    color: #666;
+}
+.cm-math {
+    color: #f0f;
+    color: #8b4513;
+}
+.cm-formatting-math {
+/*    color: #faf;*/
+}
+.cm-mathvar {
+    font-style: italic;
+}
+.cm-math-subscript {
+    vertical-align: sub;
+    font-size: 80%;
+}
+.cm-math-superscript {
+    vertical-align: super;
+    font-size: 80%;
+}
+.cm-mathwarning {
+    color: red;
+    font-weight: bold;
+}
+
+.math-equation {
+/*    text-align: center;*/
+}
+.cm-formatting-math-delimit-equation {
+    color: #faf;
+}
+
+
+
+.editbuttons {
+    float: right;
+    margin: 5px;
+}
+
+article pre {
+    font-family: "Monaco","DejaVu Sans Mono","Courier New",monospace;
+/*    font-size: 10pt;*/
+/*    margin-left: 0.5em;*/
+    background: #eee;
+    padding: 0.2em 0.2em 0.2em 0.2em;
+    border-radius: 2px;
+}
+
+ul {
+    padding-left: 2em;
+}
+ol {
+    padding-left: 2em;
+}
+a {
+    text-decoration: none;
+    color: #00D;
+}
+a:visited {
+    color: #55C;
+}
+
+a:hover {
+    color: #66f;
+    text-decoration: underline;
+}
+a.wiki-noname {
+    color: #D00;
+}
+
+img {
+    border: none;
+}
+
+.footnote {
+    font-size: 90%;
+}
+hr {
+    margin: 0.75em -0.5em 0.5em -0.5em;
+    background-color: #6078BF;
+    height: 1px;
+    border: 0;
+}

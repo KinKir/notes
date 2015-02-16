@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Wikis{% end %}
+
+{% block body %}
+<article>
+  <h1>Wikis:</h1>
+  <ul>
+    {% for wiki in wikis %}
+    <li><a href="/wiki/{{ url_escape(wiki.name) }}">{{ wiki.name }}</a></li>
+    {% end %}
+  </ul>
+</article>
+{% end %}

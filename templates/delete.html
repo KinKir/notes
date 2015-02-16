@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{wiki.name}} - Deleting doc {{doc.id}} {% if doc.get_meta('title') %}- {{doc.get_meta('title')}}{% end %}{% end %}
+
+{% block body %}
+<h1>Deleting document</h1>
+
+<p>Are you sure you want to
+delete <a href="/wiki/{{url_escape(wiki.name)}}/doc/{{doc.id}}">document
+{{doc.id}}{% if doc.get_meta('title') %}, {{doc.get_meta('title').title()}}{% end %}</a>?</p>
+
+<form action="/wiki/{{url_escape(wiki.name)}}/delete/{{doc.id}}" method="post">
+  {% module xsrf_form_html() %}
+  <input type="submit" value="Delete it">
+</form>
+{% end %}
+
+{% block sidebar %}
+{% include "wikisidebar.html" %}
+{% end %}

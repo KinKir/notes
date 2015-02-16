@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{{wiki.name}}{% end %}
+
+{% block body %}
+<h1>Recent changes for {{wiki.name}}</h1>
+
+<ul>
+{% for change in changes %}
+<li>
+  {% if change['doc'].get_meta('title') %}
+  <a href="/wiki/{{url_escape(wiki.name)}}/title/{{url_escape(change['doc'].get_meta('title'))}}">{{change['doc'].get_meta('title').title()}}</a>
+  {% else %}
+  <a href="/wiki/{{url_escape(wiki.name)}}/doc/{{change['doc'].id}}"><em>untitled</em></a>
+  {% end %}
+  {{change['description']}} <span class="timestamp">{{change['changed']}}</span> (<a href="/wiki/{{url_escape(wiki.name)}}/doc/{{change['doc'].id}}">doc {{change['doc'].id}}</a>, <a href="/wiki/{{url_escape(wiki.name)}}/version/{{change['version']}}">version {{change['version']}}</a>)</li>
+{% end %}
+</ul>
+
+{% end %}
+
+{% block sidebar %}
+<div class="sidebox">
+  <a href="/wikis">List of wikis</a>
+</div>
+{% include "wikisidebar.html" %}
+{% end %}

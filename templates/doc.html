@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}{{wiki.name}} - doc {{doc.id}} {% if doc.get_meta('title') %}- {{doc.get_meta('title')}}{% end %}{% end %}
+
+{% block body %}
+  {% include "singledoc.html" %}
+{% end %}
+
+{% block sidebar %}
+{% include "wikisidebar.html" %}
+{% end %}

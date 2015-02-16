@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}{{wiki.name}} - {{title}}{% end %}
+
+{% block body %}
+ {% for doc, content, meta in docs %}
+  {% include "singledoc.html" %}
+ {% end %}
+{% end %}
+
+{% block sidebar %}
+{% include "wikisidebar.html" %}
+<div class="sidebox">
+  What links here:
+  {% for i, backlink in enumerate(backlinks) %}
+    <a href="/wiki/{{url_escape(wiki.name)}}/title/{{url_escape(backlink)}}#link-{{url_escape(title)}}">{{backlink.title()}}</a>{{ ',' if i + 1 < len(backlinks) else '' }}
+  {% end %}
+  {% if not backlinks %}
+    <em>nothing</em>
+  {% end %}
+</div>
+{% end %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}{{wiki.name}}{% end %}
+
+{% block body %}
+<h1>{{wiki.name}}</h1>
+
+<div>
+<p>Pages:</p>
+<ul>
+  {% for i, title in enumerate(titles) %}
+  <li><a href="/wiki/{{url_escape(wiki.name)}}/title/{{url_escape(title)}}">{{title}}</a></li>
+  {% end %}
+  {% if not titles %}
+   <li><em>No pages</em></li>
+  {% end %}
+</ul>
+</div>
+
+<p>Untitled documents:</p>
+<ul>
+{% for docid in docids %}
+  <li><a href="/wiki/{{url_escape(wiki.name)}}/doc/{{docid['id']}}">Doc {{docid['id']}}</a> modified <span class="timestamp">{{docid['modified']}}</span></li>
+{% end %}
+</ul>
+
+{% end %}
+
+{% block sidebar %}
+<div class="sidebox">
+  <a href="/wikis">List of wikis</a>
+</div>
+{% include "wikisidebar.html" %}
+{% end %}
