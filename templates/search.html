@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}{{wiki.name}} - search {{q}}{% end %}
+
+{% block body %}
+<h1>{{wiki.name}} search results</h1>
+
+<div>
+<ul>
+  {% for doc in docs %}
+    {% if doc.get_meta('title') %}
+     <li><a href="/wiki/{{url_escape(wiki.name)}}/title/{{url_escape(doc.get_meta('title'))}}">{{doc.get_meta('title').title()}}</a></li>
+    {% else %}
+     <li><a href="/wiki/{{url_escape(wiki.name)}}/doc/{{doc.id}}">{{doc.describe()}}</a></li>
+    {% end %}
+  {% end %}
+  {% if not docs %}
+   <li><em>No results</em></li>
+  {% end %}
+</ul>
+</div>
+
+{% end %}
+
+{% block sidebar %}
+<div class="sidebox">
+  <a href="/wikis">List of wikis</a>
+</div>
+{% include "wikisidebar.html" %}
+{% end %}

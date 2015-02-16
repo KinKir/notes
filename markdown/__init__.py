@@ -64,6 +64,7 @@ class Markdown(object):
         'enable_attributes'     : True,
         'smart_emphasis'        : True,
         'lazy_ol'               : True,
+        'link_protocols'        : {}
     }
 
     output_formats = {

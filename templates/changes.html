@@ -11,11 +11,12 @@
   {% if change['doc'].get_meta('title') %}
   <a href="/wiki/{{url_escape(wiki.name)}}/title/{{url_escape(change['doc'].get_meta('title'))}}">{{change['doc'].get_meta('title').title()}}</a>
   {% else %}
-  <a href="/wiki/{{url_escape(wiki.name)}}/doc/{{change['doc'].id}}"><em>untitled</em></a>
+  <a href="/wiki/{{url_escape(wiki.name)}}/doc/{{change['doc'].id}}">{{change['shortdesc']}}</a>
   {% end %}
   {{change['description']}} <span class="timestamp">{{change['changed']}}</span> (<a href="/wiki/{{url_escape(wiki.name)}}/doc/{{change['doc'].id}}">doc {{change['doc'].id}}</a>, <a href="/wiki/{{url_escape(wiki.name)}}/version/{{change['version']}}">version {{change['version']}}</a>)</li>
 {% end %}
 </ul>
+<a href="/wiki/{{url_escape(wiki.name)}}/changes?num={{num}}&offset={{num+offset}}">Next {{num}}</a>
 
 {% end %}
 

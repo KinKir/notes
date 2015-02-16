@@ -150,14 +150,48 @@ class WikiHandler(NRequestHandler) :
 class ChangesHandler(NRequestHandler) :
     @tornado.web.authenticated
     def get(self, wikiname) :
+        offset = self.get_argument('offset', '0')
+        num = self.get_argument('num', '50')
+        try :
+            offset = int(offset)
+        except ValueError :
+            offset = 0
+        try :
+            num = int(num)
+        except ValueError :
+            num = 50
+
         wikiname = url_unescape(wikiname)
         w = model.Wiki.with_name(wikiname)
         if w == None :
             raise tornado.web.HTTPError(404)
         if not w.allows_user(self.current_user) :
             raise tornado.web.HTTPError(403)
-        changes = model.Changes.changes(w, 50)
-        self.render("changes.html", wiki=w, changes=changes)
+        changes = model.Changes.changes(w, num, offset)
+        self.render("changes.html", wiki=w, changes=changes, num=num, offset=offset)
+
+class SearchHandler(NRequestHandler) :
+    @tornado.web.authenticated
+    def get(self, wikiname) :
+        q = self.get_argument('q')
+        wikiname = url_unescape(wikiname)
+
+        w = model.Wiki.with_name(wikiname)
+        if w == None :
+            raise tornado.web.HTTPError(404)
+        if not w.allows_user(self.current_user) :
+            raise tornado.web.HTTPError(403)
+
+        words = q.lower().split()
+        def query(text) :
+            for word in words :
+                if word and word in text :
+                    return True
+            return False
+
+        docs = model.Document.search(w, query)
+
+        self.render("search.html", wiki=w, q=q, docs=docs)
 
 class WikiDocHandler(NRequestHandler) :
     @tornado.web.authenticated
@@ -250,6 +284,108 @@ class DocHandler(NRequestHandler) :
                           permanent=False)
         else :
             self.redirect('/wiki/' + url_escape(w.name) + '/doc/' + str(doc.id), permanent=False)
+
+class DocUuidHandler(NRequestHandler) :
+    @tornado.web.authenticated
+    def head(self, wikiname, method, uuid) :
+        self.get(wikiname, method, uuid, include_body=False)
+
+    @tornado.web.authenticated
+    def get(self, wikiname, method, uuid, include_body=True) :
+        wikiname = url_unescape(wikiname)
+        w = model.Wiki.with_name(wikiname)
+        if w == None :
+            raise tornado.web.HTTPError(404)
+        if not w.allows_user(self.current_user) :
+            raise tornado.web.HTTPError(403)
+
+        uuidparts = uuid.split("/",1)
+        uuid = uuidparts[0]
+
+        doc = None
+        if method == "u" :
+            doc = model.Document.with_uuid(w, uuid)
+        elif method == "d" :
+            doc = model.Document.with_id(w, int(uuid))
+        elif method == 'v' :
+            version = model.Version.with_id(w, int(uuid))
+            if version :
+                doc = model.Document(wiki=w, version=version, temp=True)
+        if doc == None :
+            raise tornado.web.HTTPError(404)
+        
+        mimeparts = doc.version.mime.split(';',1)
+        mime = mimeparts[0].strip()
+        filename = None
+        if len(mimeparts) > 1 :
+            filename = mimeparts[1]
+        if len(uuidparts) > 1 :
+            filename = uuidparts[1]
+
+        if type(doc.version.content) == buffer :
+            content = bytes(doc.version.content)
+        else :
+            content = doc.version.content.encode('utf-8')
+
+        self.set_header("Content-Type", mime)
+        if filename :
+            self.set_header("Content-Disposition", "inline; filename=\"" + url_escape(filename) + "\"")
+        self.set_header("Content-Length", len(content))
+        created = datetime.datetime.utcfromtimestamp(doc.version.created)
+        print 'created',created
+        self.set_header("Last-Modified", created)
+        ims_value = self.request.headers.get("If-Modified-Since")
+        if ims_value is not None :
+            date_tuple = email.utils.parsedate(ims_value)
+            if_since = datetime.datetime.fromtimestamp(time.mktime(date_tuple))
+            if if_since >= created :
+                self.set_status(304)
+                return
+        if not include_body :
+            return
+        self.write(content)
+        self.flush()
+        return
+    @tornado.web.authenticated
+    def post(self, wikiname, method, uuid) :
+        wikiname = url_unescape(wikiname)
+        w = model.Wiki.with_name(wikiname)
+        if w == None :
+            raise tornado.web.HTTPError(404)
+        if not w.allows_user(self.current_user) :
+            raise tornado.web.HTTPError(403)
+
+        uuid = uuid.split("/", 1)
+
+        if len(self.request.files['file']) > 1 :
+            raise tornado.web.HTTPError(500)
+
+        f = self.request.files['file'][0]
+        content_type = (f.content_type or "plain/text")
+        filename = None
+        if len(uuid) > 1 : filename = uuid[1]
+        if f.filename : filename = f.filename
+        if filename :
+            content_type = content_type + ';' + filename
+        v = model.Version.create(w, self.current_user, content_type, buffer(f.body))
+
+        if method == "u" :
+            doc = model.Document.with_uuid(w, uuid[0])
+            if doc == None :
+                doc = model.Document(wiki=w, uuid=uuid[0], version=v)
+            else :
+                doc.version = v
+            doc.update()
+        elif method == "d" :
+            doc = model.Document.with_id(w, int(uuid[0]))
+            if doc == None :
+                raise tornado.web.HTTPError(500)
+            doc.version = v
+            doc.update()
+        else :
+            raise tornado.web.HTTPError(500)
+
+        self.finish({ 'docid' : doc.id })
 
 class VersionHandler(NRequestHandler) :
     @tornado.web.authenticated
@@ -357,10 +493,25 @@ import mdx_math
 
 def do_markdown(doc, wiki_titles=set()) :
     if doc.version.mime != "text/texdown" :
-        return '<a href="/wiki/' + url_escape(doc.wiki.name) + '/doc/' + str(doc.id) + '?raw=true>Download</a>', {}
+        if doc.id :
+            url = '/wiki/' + url_escape(doc.wiki.name) + '/file/d/' + str(doc.id)
+        else :
+            url = '/wiki/' + url_escape(doc.wiki.name) + '/file/v/' + str(doc.version.id)
+        text = "Download"
+        if doc.version.mime.startswith("image/") :
+            text = '<img src="' + url + '">'
+        return '<a href="' + url + '">' + text + '</a>', {}
+    uuid_link_prefix = '/wiki/' + url_escape(doc.wiki.name) + '/file/u/'
     wiki_link_prefix = '/wiki/' + url_escape(doc.wiki.name) + '/title/'
+
+    protocols = {
+        'uuid' : lambda protocol, uuid : "/wiki/"+url_escape(doc.wiki.name)+"/file/u/" + uuid,
+        'doc' : lambda protocol, docid : "/wiki/"+url_escape(doc.wiki.name)+"/doc/" + docid
+        }
+
     md = Markdown(output_format="html5",
                   lazy_ol=False,
+                  link_protocols=protocols,
                   extensions=["markdown.extensions.meta",
                               mdx_math.MathExtension(enable_dollar_delimiter=True),
                               markdown.extensions.toc.TocExtension(title="Table of contents"),
@@ -417,6 +568,7 @@ class NApplication(tornado.web.Application) :
             (r"/wiki/([^/]+)/title/(.+)", WikiDocHandler),
             (r"/wiki/([^/]+)/doc/(.+)", DocHandler),
             (r"/wiki/([^/]+)/doc/?", DocHandler),
+            (r"/wiki/([^/]+)/file/([^/]+)/(.+)", DocUuidHandler),
             (r"/wiki/([^/]+)/version/(.+)", VersionHandler),
             (r"/wiki/([^/]+)/edit/(.+)", EditDocHandler),
             (r"/wiki/([^/]+)/edit/?", EditDocHandler),
@@ -424,6 +576,7 @@ class NApplication(tornado.web.Application) :
             (r"/wiki/([^/]+)/undelete/(.+)", UndeleteDocHandler),
             (r"/wiki/([^/]+)/fork/(.+)", ForkHandler),
             (r"/wiki/([^/]+)/changes/?", ChangesHandler),
+            (r"/wiki/([^/]+)/search/?", SearchHandler),
             (r"/login", GoogleHandler),
             (r"/logout", SignoutHandler),
             ]

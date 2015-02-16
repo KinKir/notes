@@ -345,6 +345,14 @@ class LinkPattern(Pattern):
         `username:password@host:port`.
 
         """
+
+        print self.markdown.link_protocols
+        if hasattr(self.markdown, 'link_protocols') :
+            for prefix, handler in self.markdown.link_protocols.iteritems() :
+                if url.startswith(prefix+':') :
+                    url = handler(prefix, url[len(prefix)+1:])
+                    break
+
         if not self.markdown.safeMode:
             # Return immediately bipassing parsing.
             return url

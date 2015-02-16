@@ -20,9 +20,21 @@
 <p>Untitled documents:</p>
 <ul>
 {% for docid in docids %}
-  <li><a href="/wiki/{{url_escape(wiki.name)}}/doc/{{docid['id']}}">Doc {{docid['id']}}</a> modified <span class="timestamp">{{docid['modified']}}</span></li>
+  {% if docid['mime'] == "text/texdown" %}
+  <li><a href="/wiki/{{url_escape(wiki.name)}}/doc/{{docid['id']}}">{{docid['description']}}</a> modified <span class="timestamp">{{docid['modified']}}</span></li>
+  {% end %}
 {% end %}
 </ul>
+
+<p>Files:</p>
+<ul>
+{% for docid in docids %}
+  {% if docid['mime'] != "text/texdown" %}
+  <li><a href="/wiki/{{url_escape(wiki.name)}}/doc/{{docid['id']}}">{{docid['description']}}</a> modified <span class="timestamp">{{docid['modified']}}</span></li>
+  {% end %}
+{% end %}
+</ul>
+
 
 {% end %}
 

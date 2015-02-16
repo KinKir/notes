@@ -1,7 +1,6 @@
 <div class="sidebox">
   In wiki <a href="/wiki/{{url_escape(wiki.name)}}">{{wiki.name}}</a>
   <form id="search" action="/wiki/{{url_escape(wiki.name)}}/search" method="get">
-    {% module xsrf_form_html() %}
     <input name="q" type="text" placeholder="Search"><input type="submit" value="Go">
   </form>
   <ul>

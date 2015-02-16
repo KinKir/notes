@@ -22,6 +22,14 @@
 
 
 </form>
+
+<div style="display:none;">
+  <input id="wikiname" value="{{url_escape(wiki.name)}}">
+  <form id="xsrf_data">
+    {% module xsrf_form_html() %}
+  </form>
+</div>
+
 {% end %}
 
 {% block sidebar %}

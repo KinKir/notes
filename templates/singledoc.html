@@ -5,7 +5,11 @@
 {% if doc.deleted %}<span><strong>This is deleted.</strong></span>{% end %}
 {% if doc.temp %}<span><em>This is a version.</em></span>{% end %}
   {% if not doc.temp %}
-  <a href="/wiki/{{url_escape(wiki.name)}}/edit/{{doc.id}}">Edit</a>
+    {% if doc.version.mime == "text/texdown" %}
+      <a href="/wiki/{{url_escape(wiki.name)}}/edit/{{doc.id}}">Edit</a>
+    {% else %}
+      <a href="/wiki/{{url_escape(wiki.name)}}/upload/{{doc.id}}">Upload</a>
+    {% end %}
   {% else %}
   <a href="/wiki/{{url_escape(wiki.name)}}/fork/{{doc.version.id}}">Fork</a>
   {% end %}
@@ -47,9 +51,15 @@
 {% raw content %}
 
 <div class="bottom-actions">
+{% if doc.uuid %}
+<div class="bottom-uuid">uuid:{{doc.uuid}}</div>
+{% end %}
+
 <ul>
 {% if not doc.temp %}
-<li><a href="/wiki/{{url_escape(wiki.name)}}/edit/{{doc.id}}">Edit</a></li>
+  {% if doc.version.mime == "text/texdown" %}
+    <li><a href="/wiki/{{url_escape(wiki.name)}}/edit/{{doc.id}}">Edit</a></li>
+  {% end %}
 <!--<li><a href="/wiki/{{url_escape(wiki.name)}}/versions/{{doc.id}}">Versions</a></li>-->
 <li><a href="/wiki/{{url_escape(wiki.name)}}/version/{{doc.version.id}}">This version</a></li>
 <li><a href="/wiki/{{url_escape(wiki.name)}}/doc/{{doc.id}}">This document</a></li>

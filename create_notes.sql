@@ -42,9 +42,11 @@ create table parents (
 
 create table documents (
   id integer primary key,
+  uuid text,
   wiki integer not null,
   version integer not null,
   deleted integer not null,
+  unique(wiki, uuid),
   foreign key(wiki) references wikis(id),
   foreign key(version) references versions(id)
 );

@@ -69,14 +69,25 @@ class Wiki(object) :
 
     def document_ids(self) :
         docids = []
-        for row in DB.execute("""select d.id as id, mime, v.created as modified, m.mvalue as title
+        for row in DB.execute("""select d.id as id, mime, v.created as modified, m.mvalue as title, uuid
                                    from documents as d join versions as v on d.version=v.id
                                          left outer join meta as m on m.docid=d.id
                                    where d.wiki=? and not deleted""", (self.id,)) :
+            description = 'Doc ' + str(row['id'])
+            mimes = row['mime'].split(';',1)
+            if row['title'] :
+                description = row['title']
+            elif len(mimes) > 1 and mimes[1] != row['uuid'] :
+                description = mimes[1]
+            elif row['uuid'] :
+                description = row['uuid']
+                if mimes[0] != "text/texdown" :
+                    description += " (" + mimes[0] + ")"
             docids.append({ 'id' : row['id'],
                             'title' : row['title'],
                             'mime' : row['mime'],
-                            'modified' : row['modified'] })
+                            'modified' : row['modified'],
+                            'description' : description })
         return docids
 
     @classmethod
@@ -156,8 +167,9 @@ class Version(object) :
             return v
 
 class Document(object) :
-    def __init__(self, id=None, wiki=None, version_id=None, version=None, deleted=False, temp=False) :
+    def __init__(self, id=None, uuid=None, wiki=None, version_id=None, version=None, deleted=False, temp=False) :
         self.id = id
+        self.uuid = uuid
         self.wiki = wiki
         if version :
             self.version_id = version.id
@@ -171,6 +183,7 @@ class Document(object) :
         self.meta_cache = {}
 
         self._init_id = self.id
+        self._init_uuid = self.uuid
         self._init_version_id = self.version_id
         self._init_deleted = self.deleted
 
@@ -181,8 +194,23 @@ class Document(object) :
             return "modified"
         elif self._init_deleted != self.deleted :
             return "deleted" if self.deleted else "undeleted"
+        elif self._init_uuid != self.uuid :
+            return "uuid"
         else :
             return "no change"
+
+    def describe(self) :
+        title = self.get_meta('title')
+        if title :
+            return title
+        mime = self.version.mime.split(';',1)
+        prefix = self.uuid or ('Doc ' + self.id)
+        if mime[0] != 'text/texdown' :
+            if len(mime) > 1 :
+                return mime[1]
+            else :
+                return prefix + '(' + self.mime[0] + ')'
+        return prefix
 
     @property
     def version(self) :
@@ -199,13 +227,13 @@ class Document(object) :
             raise Exception("Saving temp document")
         if self.id == None :
             with DB :
-                c = DB.execute("insert into documents (wiki, version, deleted) values (?,?,?)",
-                               (self.wiki.id, self.version.id, self.deleted))
+                c = DB.execute("insert into documents (uuid, wiki, version, deleted) values (?,?,?,?)",
+                               (self.uuid, self.wiki.id, self.version.id, self.deleted))
                 self.id = c.lastrowid
         else :
             with DB :
-                DB.execute("update documents set version=?, deleted=? where id=?",
-                           (self.version.id, self.deleted, self.id))
+                DB.execute("update documents set uuid=?, version=?, deleted=? where id=?",
+                           (self.uuid, self.version.id, self.deleted, self.id))
         with DB :
             DB.execute("insert into changes (changed, docid, version, description) values (?,?,?,?)",
                        (int(time.time()), self.id, self.version.id, self.describe_change()))
@@ -238,17 +266,25 @@ class Document(object) :
 
     @classmethod
     def with_id(cls, wiki, id) :
-        for row in DB.execute("select version, deleted from documents where id=? and wiki=?",
+        for row in DB.execute("select uuid, version, deleted from documents where id=? and wiki=?",
                               (id, wiki.id)) :
-            return Document(id=id, wiki=wiki, version_id=row['version'],
+            return Document(id=id, uuid=row['uuid'], wiki=wiki, version_id=row['version'],
                             deleted=bool(row['deleted']))
+
+    @classmethod
+    def with_uuid(cls, wiki, uuid) :
+        for row in DB.execute("select id, version, deleted from documents where uuid=? and wiki=?",
+                              (uuid, wiki.id)) :
+            return Document(id=row['id'], uuid=uuid, wiki=wiki, version_id=row['version'],
+                            deleted=bool(row['deleted']))
+
 
     @classmethod
     def with_version(cls, version) :
         docs = []
-        for row in DB.execute("select id, deleted from documents where version=? and wiki=?",
+        for row in DB.execute("select id, uuid, deleted from documents where version=? and wiki=?",
                               (version.id, version.wiki.id)) :
-            docs.append(Document(id=row['id'], wiki=version.wiki, version=version, deleted=bool(row['deleted'])))
+            docs.append(Document(id=row['id'], uuid=row['uuid'], wiki=version.wiki, version=version, deleted=bool(row['deleted'])))
         return docs
 
     @classmethod
@@ -257,6 +293,16 @@ class Document(object) :
         for row in DB.execute("select mvalue from meta join documents on meta.docid=documents.id where mkey='title' and wiki=? and not deleted", (wiki.id,)) :
             titles.add(row['mvalue'])
         return titles
+
+    @classmethod
+    def search(cls, wiki, query) :
+        docs = []
+        for row in DB.execute("select id, uuid, deleted, version from documents where not deleted and wiki=?", (wiki.id,)) :
+            doc = Document(id=row['id'], uuid=row['uuid'], wiki=wiki, version_id=row['version'])
+            v = doc.version
+            if v.mime == "text/texdown" and query(v.content.lower()) :
+                docs.append(doc)
+        return docs
 
 class Links(object) :
     @staticmethod
@@ -268,16 +314,32 @@ class Links(object) :
 
 class Changes(object) :
     @staticmethod
-    def changes(wiki, n) :
+    def changes(wiki, n, offset=0) :
         changes = []
-        for row in DB.execute("""select c.changed, c.docid, c.version, c.description
+        for row in DB.execute("""select c.changed, c.docid, c.version, c.description, v.mime
                                  from changes as c join documents as d on c.docid = d.id
+                                   join versions as v on c.version=v.id
                                  where d.wiki=?
-                                 order by changed desc limit ?""", (wiki.id, n)) :
+                                 order by changed desc limit ? offset ? """, (wiki.id, n, offset)) :
+
+            doc = Document.with_id(wiki, row['docid'])
+
+            desc = 'Doc ' + str(doc.id)
+            mimes = row['mime'].split(';',1)
+            if doc.get_meta('title') :
+                desc = doc.get_meta('title')
+            elif len(mimes) > 1 and mimes[1] != doc.uuid :
+                desc = mimes[1]
+            elif doc.uuid :
+                desc = doc.uuid
+                if mimes[0] != "text/texdown" :
+                    desc += " (" + mimes[0] + ")"
+
             changes.append({
                     'changed' : row['changed'],
-                    'doc' : Document.with_id(wiki, row['docid']),
+                    'doc' : doc,
                     'version' : row['version'],
-                    'description' : row['description']
+                    'description' : row['description'],
+                    'shortdesc' : desc
                     })
         return changes

@@ -78,6 +78,164 @@ $(function () {
   });
 });
 
+function generateGUID() {
+  return (_.now().toString(36)
+          + "-" + Math.random().toString(16).slice(2)
+          + "-" + Math.random().toString(16).slice(2));
+}
+
+function addInlineAttachment(cm) {
+
+  var $notifier = $('<div class="notifier">').appendTo(document.body);
+
+  $notifier.text("Uploading...").hide();
+  var _notifierTimeout = null;
+  function notifierTimeout(f, time) {
+    if (_notifierTimeout) {
+      window.clearTimeout(_notifierTimeout);
+    }
+    _notifierTimeout = window.setTimeout(f, time);
+  }
+
+  // extracted from inline-attachment.js
+
+  var settings = {
+    imageTypes: [
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/gif'
+    ],
+    ignoredTypes: [
+      'text/plain'
+    ]
+  };
+
+  function isFileAllowed(file) {
+    return settings.ignoredTypes.indexOf(file.type) === -1;
+  }
+
+  function uploadFile(file) {
+    var formData = new FormData(),
+        xhr = new XMLHttpRequest();
+
+    var filename = generateGUID();
+    var linkname = filename;
+    if (file.name) {
+      linkname += '/' + file.name;
+    }
+
+    $('#xsrf_data input').each(function () {
+      formData.append(this.name, this.value);
+    });
+
+    formData.append('file', file, file.name || filename);
+
+    var uploadurl = "/wiki/" + $('#wikiname').val() + '/file/u/' + linkname;
+    console.log(uploadurl);
+    console.log(formData);
+
+    insert(file, linkname, file.name);
+    notifierTimeout(function () {
+      $notifier.show().text("Uploading " + linkname);
+    }, 0);
+
+    xhr.open('POST', uploadurl, true);
+    xhr.onload = function () {
+      if (xhr.readyState === 4) {
+      if (xhr.status == 200 || xhr.status === 201) { // OK or Created
+        notifierTimeout(function () {
+          $notifier.show().text("Uploaded " + linkname);
+          notifierTimeout(function () {
+            $notifier.hide();
+          }, 2000);
+        }, 0);
+        console.log('success');
+      } else {
+        notifierTimeout(function () {
+          $notifier.show().text("Failed to upload " + linkname);
+          notifierTimeout(function () {
+            $notifier.hide();
+          }, 5000);
+        }, 0);
+        console.log('failure');
+      }
+      }
+    };
+    xhr.onerror = function (e) {
+      notifierTimeout(function () {
+        $notifier.show().text("Failed to upload " + linkname);
+        notifierTimeout(function () {
+          $notifier.hide();
+        }, 5000);
+      }, 0);
+      console.log('failure');
+    };
+    xhr.onprogress = function (e) {
+      notifierTimeout(function () {
+        var perc = e.loaded / Math.max(e.loaded, e.total);
+        $notifier.show().text("Uploading " + linkname + ": " + perc.toFixed(1) + "%");
+      }, 0);
+    };
+    xhr.send(formData);
+  }
+
+  function insert(file, linkname, filename) {
+    var link = '[' + (filename || '') + '](uuid:' + linkname + ')';
+    if (settings.imageTypes.indexOf(file.type) >= 0) {
+      link = '!' + link;
+    }
+    cm.replaceSelection(link);
+  }
+
+  function onPaste(e) {
+    var result = false,
+        clipboardData = e.clipboardData,
+        items;
+    if (typeof clipboardData === "object") {
+      items = clipboardData.items || clipboardData.files || [];
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var file = item.getAsFile();
+        if (file && isFileAllowed(item)) {
+          result = true;
+          uploadFile(file);
+        }
+      }
+    }
+    if (result) { e.preventDefault(); }
+    return result;
+  }
+
+  function onDrop(e) {
+    var result = false;
+    for (var i = 0; i < e.dataTransfer.files.length; i++) {
+      var file = e.dataTransfer.files[i];
+      console.log(file);
+      if (file && isFileAllowed(file)) {
+        result = true;
+        uploadFile(file);
+      }
+    }
+    return result;
+  }
+
+  var $el = $(cm.getWrapperElement());
+  cm.getWrapperElement().addEventListener("paste", function (e) {
+    console.log("paste");
+    onPaste(e);
+  }, false);
+  cm.on("drop", function (data, e) {
+    if (onDrop(e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      return true;
+    } else {
+      return false;
+    }
+  });
+}
+
 $(function () {
   if (document.getElementById('edit')) {
     var cm = CodeMirror.fromTextArea($('#edit textarea')[0], {
@@ -95,6 +253,9 @@ $(function () {
         }
       }
     });
+
+    addInlineAttachment(cm);
+
     if ($('#edit textarea').attr('codemirror-focus-end') === "true") {
       cm.execCommand('goDocEnd');
     }
