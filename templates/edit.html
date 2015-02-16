@@ -9,8 +9,9 @@
     {% if doc %}
     <a href="/wiki/{{url_escape(wiki.name)}}/doc/{{doc.id}}">Cancel</a>
     {% end %}
-    <input type="submit" value="Save">
+    <input type="submit" value="Save" title="Save the document (Ctrl-S)">
   </div>
+  <div class="clear"></div>
 
   {% if doc %}
   <textarea name="content">{{ doc.version.content }}</textarea>

@@ -131,6 +131,7 @@ class IndexHandler(NRequestHandler) :
             self.render("index.html")
 
 class WikiHandler(NRequestHandler) :
+    @tornado.web.authenticated
     def get(self, wikiname) :
         wikiname = url_unescape(wikiname)
         w = model.Wiki.with_name(wikiname)
@@ -147,6 +148,7 @@ class WikiHandler(NRequestHandler) :
         self.render("wiki.html", wiki=w, docids=docids, titles=titles)
 
 class ChangesHandler(NRequestHandler) :
+    @tornado.web.authenticated
     def get(self, wikiname) :
         wikiname = url_unescape(wikiname)
         w = model.Wiki.with_name(wikiname)
@@ -158,6 +160,7 @@ class ChangesHandler(NRequestHandler) :
         self.render("changes.html", wiki=w, changes=changes)
 
 class WikiDocHandler(NRequestHandler) :
+    @tornado.web.authenticated
     def get(self, wikiname, title) :
         wikiname = url_unescape(wikiname)
         title = url_unescape(title)
@@ -200,6 +203,7 @@ class WikiDocHandler(NRequestHandler) :
         self.render("wikipage.html", wiki=w, docs=mds, title=title, backlinks=ltitles)
 
 class DocHandler(NRequestHandler) :
+    @tornado.web.authenticated
     def get(self, wikiname, docid=None) :
         wikiname = url_unescape(wikiname)
         w = model.Wiki.with_name(wikiname)
@@ -215,6 +219,7 @@ class DocHandler(NRequestHandler) :
 #        store_meta(doc) #TODO:REMOVE
         html, meta = do_markdown(doc, wiki_titles=model.Document.titles(w))
         self.render("doc.html", wiki=w, doc=doc, content=html, meta=meta, title=None)
+    @tornado.web.authenticated
     def post(self, wikiname, docid=None) :
         wikiname = url_unescape(wikiname)
         content = self.get_argument('content')
@@ -247,6 +252,7 @@ class DocHandler(NRequestHandler) :
             self.redirect('/wiki/' + url_escape(w.name) + '/doc/' + str(doc.id), permanent=False)
 
 class VersionHandler(NRequestHandler) :
+    @tornado.web.authenticated
     def get(self, wikiname, versionid) :
         wikiname = url_unescape(wikiname)
         w = model.Wiki.with_name(wikiname)
@@ -254,7 +260,7 @@ class VersionHandler(NRequestHandler) :
             raise tornado.web.HTTPError(404)
         if not w.allows_user(self.current_user) :
             raise tornado.web.HTTPError(403)
-        version = model.Version.with_id(int(versionid))
+        version = model.Version.with_id(w, int(versionid))
         if version == None or w.id != version.wiki.id :
             raise tornado.web.HTTPError(404)
         doc = model.Document(wiki=w, version=version, temp=True)
@@ -262,6 +268,7 @@ class VersionHandler(NRequestHandler) :
         self.render("doc.html", wiki=w, doc=doc, content=html, meta=meta, title=None)
 
 class EditDocHandler(NRequestHandler) :
+    @tornado.web.authenticated
     def get(self, wikiname, docid=None) :
         wikiname = url_unescape(wikiname)
         w = model.Wiki.with_name(wikiname)
@@ -280,6 +287,7 @@ class EditDocHandler(NRequestHandler) :
         self.render("edit.html", wiki=w, doc=doc, title=title)
 
 class DeleteDocHandler(NRequestHandler) :
+    @tornado.web.authenticated
     def get(self, wikiname, docid) :
         wikiname = url_unescape(wikiname)
         w = model.Wiki.with_name(wikiname)
@@ -291,6 +299,7 @@ class DeleteDocHandler(NRequestHandler) :
         if doc == None :
             raise tornado.web.HTTPError(404)
         self.render("delete.html", wiki=w, doc=doc)
+    @tornado.web.authenticated
     def post(self, wikiname, docid) :
         wikiname = url_unescape(wikiname)
         w = model.Wiki.with_name(wikiname)
@@ -306,6 +315,7 @@ class DeleteDocHandler(NRequestHandler) :
         self.redirect('/wiki/' + url_escape(w.name) + '/doc/' + str(doc.id), permanent=False)
 
 class UndeleteDocHandler(NRequestHandler) :
+    @tornado.web.authenticated
     def get(self, wikiname, docid) :
         wikiname = url_unescape(wikiname)
         w = model.Wiki.with_name(wikiname)
@@ -321,6 +331,7 @@ class UndeleteDocHandler(NRequestHandler) :
         self.redirect('/wiki/' + url_escape(w.name) + '/doc/' + str(doc.id), permanent=False)
 
 class ForkHandler(NRequestHandler) :
+    @tornado.web.authenticated
     def get(self, wikiname, versionid) :
         wikiname = url_unescape(wikiname)
         w = model.Wiki.with_name(wikiname)
@@ -341,6 +352,7 @@ import markdown.extensions
 import markdown.extensions.headerid
 import markdown.extensions.wikilinks
 import markdown.extensions.toc
+import markdown.extensions.smarty
 import mdx_math
 
 def do_markdown(doc, wiki_titles=set()) :
@@ -356,12 +368,16 @@ def do_markdown(doc, wiki_titles=set()) :
                               "markdown.extensions.tables",
                               "markdown.extensions.tables",
                               "markdown.extensions.fenced_code",
+                              markdown.extensions.smarty.SmartyExtension(),
                               markdown.extensions.headerid.HeaderIdExtension(level=2),
                               markdown.extensions.wikilinks.WikiLinkExtension(base_url=wiki_link_prefix, end_url="", titles=wiki_titles)
                               ])
 
-    html = md.convert(doc.version.content)
-    return unicode(html), md.Meta
+    try :
+        html = md.convert(doc.version.content)
+        return unicode(html), md.Meta
+    except Exception as x :
+        return "<div class='markdown-parse-error'>" + str(x) + "</div>", {}
 
 def store_meta(doc) :
     _, meta = do_markdown(doc)

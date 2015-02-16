@@ -113,11 +113,27 @@ class Version(object) :
         self.mime = mime
         self.content = content
 
-#    def parents_ids(self) :
-#        pids = []
-#        for row in DB.execute("""with recursive ancestor(vid, pid, author, created) as (
-#                                  select version, parent, author, created
-#                                  from select version, parent from parents where 
+#   def parents_ids(self) :
+#       pids = []
+#       for row in DB.execute("""with recursive ancestor(vid, pid, author, created) as (
+#                                 select version, parent, author, created
+#                                 from select version, parent from parents where 
+
+    def parent_ids(self) :
+        pids = []
+        for row in DB.execute("select parent, created from parents join versions on parents.parent=versions.id where version=?", (self.id,)) :
+            pids.append({'id' : row['parent'],
+                         'created' : row['created']})
+        return pids
+    def child_ids(self) :
+        pids = []
+        for row in DB.execute("select version, created from parents join versions on parents.version=versions.id where parent=?", (self.id,)) :
+            pids.append({'id' : row['version'],
+                         'created' : row['created']})
+        return pids
+
+    def docs(self) :
+        return Document.with_version(self)
 
     @classmethod
     def with_id(cls, wiki, id) :
@@ -226,6 +242,14 @@ class Document(object) :
                               (id, wiki.id)) :
             return Document(id=id, wiki=wiki, version_id=row['version'],
                             deleted=bool(row['deleted']))
+
+    @classmethod
+    def with_version(cls, version) :
+        docs = []
+        for row in DB.execute("select id, deleted from documents where version=? and wiki=?",
+                              (version.id, version.wiki.id)) :
+            docs.append(Document(id=row['id'], wiki=version.wiki, version=version, deleted=bool(row['deleted'])))
+        return docs
 
     @classmethod
     def titles(cls, wiki) :

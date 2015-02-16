@@ -19,6 +19,9 @@ class MathExtension(markdown.extensions.Extension):
         super(MathExtension, self).__init__(*args, **kwargs)
 
     def extendMarkdown(self, md, md_globals):
+
+        md.ESCAPED_CHARS.append('$')
+
         def handle_match_inline(m):
             node = markdown.util.etree.Element('script')
             node.set('type', 'math/tex')

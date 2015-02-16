@@ -170,6 +170,13 @@ p {
     float: right;
     margin: 5px;
 }
+.clear {
+    content: '.';
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+}
 
 article pre {
     font-family: "Monaco","DejaVu Sans Mono","Courier New",monospace;
@@ -178,6 +185,12 @@ article pre {
     background: #eee;
     padding: 0.2em 0.2em 0.2em 0.2em;
     border-radius: 2px;
+}
+
+article code {
+    background: #eee;
+    border-radius: 2px;
+    padding: 2px; margin: -2px;
 }
 
 ul {
