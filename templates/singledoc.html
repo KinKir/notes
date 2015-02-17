@@ -70,6 +70,11 @@
  {% end %}
 {% else %}
 {% end if %}
+{% if doc.id %}
+  <li><a href="/wiki/{{url_escape(wiki.name)}}/file/d/{{doc.id}}">Raw</a></li>
+{% else %}
+  <li><a href="/wiki/{{url_escape(wiki.name)}}/file/v/{{doc.version.id}}">Raw</a></li>
+{% end %}
 <li><a href="/wiki/{{url_escape(wiki.name)}}/fork/{{doc.version.id}}">Fork</a></li>
 </ul>
 </div>
