@@ -204,7 +204,7 @@ class Document(object) :
         if title :
             return title
         mime = self.version.mime.split(';',1)
-        prefix = self.uuid or ('Doc ' + self.id)
+        prefix = self.uuid or ('Doc ' + str(self.id))
         if mime[0] != 'text/texdown' :
             if len(mime) > 1 :
                 return mime[1]

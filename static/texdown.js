@@ -601,18 +601,30 @@ CodeMirror.defineMode("markdown-math", function(cmCfg, modeCfg) {
 
     if (ch === '\\') {
       if (stream.eat('\\')) {
-        return getType(state) + ' mathwarning';
+        t = getType(state) + ' mathwarning';
+        if (state.mathBraceDepth === 0) {
+          state.mathScriptLevel = 0;
+        }
+        return t;
       }
       if (stream.eat('$') || stream.eat('{') || stream.eat('}') || stream.eat('\\') || stream.eat('&')) { // escaped
-        return getType(state);
+        t = getType(state);
+        if (state.mathBraceDepth === 0) {
+          state.mathScriptLevel = 0;
+        }
+        return t;
       } else if (stream.match(/[A-Za-z0-9]+/)) { // token
-        return getType(state);
+        t = getType(state);
+        if (state.mathBraceDepth === 0) {
+          state.mathScriptLevel = 0;
+        }
+        return t;
       }
     }
     if (ch === '&') {
       return getType(state) + ' mathwarning';
     }
-    if ('a' <= ch && ch <= 'z') {
+    if ('a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z') {
       t = getType(state) + " mathvar";
       if (state.mathBraceDepth === 0) {
         state.mathScriptLevel = 0;
@@ -621,12 +633,16 @@ CodeMirror.defineMode("markdown-math", function(cmCfg, modeCfg) {
     }
     if (ch === '_') {
       t = getType(state);
-      state.mathScriptLevel = -1;
+      if (state.mathScriptLevel === 0) {
+        state.mathScriptLevel = -1;
+      }
       return t;
     }
     if (ch === '^') {
       t = getType(state);
-      state.mathScriptLevel = 1;
+      if (state.mathScriptLevel === 0) {
+        state.mathScriptLevel = 1;
+      }
       return t;
     }
     if (ch === '{' && state.mathScriptLevel != 0) {

@@ -1,11 +1,37 @@
+@font-face {
+  font-family: 'PT Serif';
+  font-style: normal;
+  font-weight: 400;
+  src: local('PT Serif'), local('PTSerif-Regular'), url(fonts/PTSerif-Regular.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'PT Serif';
+  font-style: normal;
+  font-weight: 700;
+  src: local('PT Serif Bold'), local('PTSerif-Bold'), url(fonts/PTSerif-Bold.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'PT Serif';
+  font-style: italic;
+  font-weight: 400;
+  src: local('PT Serif Italic'), local('PTSerif-Italic'), url(fonts/PTSerif-Italic.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'PT Serif';
+  font-style: italic;
+  font-weight: 700;
+  src: local('PT Serif Bold Italic'), local('PTSerif-BoldItalic'), url(fonts/PTSerif-BoldItalic.ttf) format('truetype');
+}
+
+
 html, body {
-    font-family: "Times New Roman", "serif";
+    font-family: "PT Serif", "Times New Roman", serif;
     margin: 0; padding: 0;
 }
 
 #body {
-    width: 1000px;
-    padding: 1em 2em;
+    width: 1030px;
+    padding: 2em 0 0 3em;
     margin: 0;
 }
 #sidebar {
@@ -28,8 +54,9 @@ html, body {
 }
 
 #main {
-    width: 650px;
+    width: 680px;
     float: left;
+    font-size: 16px;
 }
 
 article {
@@ -49,15 +76,22 @@ article.deleted {
     margin-bottom: 0.2em;
 }
 
+:hover > a.header-link:after {
+    font-weight: normal;
+    margin-left: 1em;
+    content: 'link';
+    font-size: 12px;
+}
+
 p {
 
 }
 
 .actions {
     float: right;
-    border: 1px solid #ccc;
+/*    border: 1px solid #ccc;
     border-radius: 3px;
-    background: #eee;
+    background: #eee;*/
     padding: 0.2em 0.5em;
 }
 
@@ -113,6 +147,7 @@ p {
     height: auto;
     line-height: 1.25;
     background: #fffff0;
+    font-size: 14px;
 }
 
 .cm-header { }
@@ -236,4 +271,12 @@ hr {
     padding: 3px 5px;
     background: white;
     border: 1px solid #ccc;
+}
+
+article table {
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+article td {
+  padding: 3px 10px;
 }

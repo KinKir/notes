@@ -171,9 +171,9 @@ function addInlineAttachment(cm) {
       }, 0);
       console.log('failure');
     };
-    xhr.onprogress = function (e) {
+    xhr.upload.onprogress = function (e) {
       notifierTimeout(function () {
-        var perc = e.loaded / Math.max(e.loaded, e.total);
+        var perc = 100 * e.loaded / Math.max(e.loaded, e.total);
         $notifier.show().text("Uploading " + linkname + ": " + perc.toFixed(1) + "%");
       }, 0);
     };

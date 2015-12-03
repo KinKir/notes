@@ -34,4 +34,20 @@
 
 {% block sidebar %}
 {% include "wikisidebar.html" %}
+<div class="sidebox">
+  What links here:
+  {% for i, backlink in enumerate(backlinks) %}
+    <a href="/wiki/{{url_escape(wiki.name)}}/title/{{url_escape(backlink)}}{% if title %}#link-{{url_escape(title)}}{% end %}">{{backlink.title()}}</a>{{ ',' if i + 1 < len(backlinks) else '' }}
+  {% end %}
+  {% if not backlinks %}
+    <em>nothing</em>
+  {% end %}
+</div>
+<div class="sidebox">
+  Editing reference: &bull; Ctrl-S saves immediately &bull; Markdown
+  formatting is MathJax-enabled &bull; 'Title:' at the beginning
+  produces a wiki-linkable title &bull; Wikilinks use the [[...]] and
+  [[...|label]] format &bull; Paste or drop images or documents into
+  the text area to upload
+</div>
 {% end %}

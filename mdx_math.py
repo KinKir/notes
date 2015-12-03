@@ -34,18 +34,18 @@ class MathExtension(markdown.extensions.Extension):
             node.text = markdown.util.AtomicString(m.group(3))
             if '\\begin' in m.group(2):
                 node.text = markdown.util.AtomicString(m.group(2) +
-                m.group(3) + m.group(4))
+                m.group(4) + m.group(5))
             return node
 
         configs = self.getConfigs()
         inlinemathpatterns = (
-            markdown.inlinepatterns.Pattern(r'(?<!\\|\$)(\$)([^\$]+)(\$)'),  #  $...$
+            markdown.inlinepatterns.Pattern(r'(?<!\\|\$)(\$)((?:[^\$]|\\\$)+)(\$)'),  #  $...$
             markdown.inlinepatterns.Pattern(r'(?<!\\)(\\\()(.+?)(\\\))')     # \(...\)
         )
         mathpatterns = (
             markdown.inlinepatterns.Pattern(r'(?<!\\)(\$\$)([^\$]+)(\$\$)'), # $$...$$
             markdown.inlinepatterns.Pattern(r'(?<!\\)(\\\[)(.+?)(\\\])'),    # \[...\]
-            markdown.inlinepatterns.Pattern(r'(?<!\\)(\\begin{[A-Za-z]+\*?})(.+)(\\end{[A-Za-z]+\*?})')
+            markdown.inlinepatterns.Pattern(r'(?<!\\)(\\begin{([A-Za-z]+)\*?})(.+?)(\\end{\3\*?})')
         )
         if not configs['enable_dollar_delimiter']:
             inlinemathpatterns = inlinemathpatterns[1:]

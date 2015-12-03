@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 from . import Extension
 from ..treeprocessors import Treeprocessor
 from ..util import HTML_PLACEHOLDER_RE, parseBoolValue
+from ..util import etree
 import re
 import logging
 import unicodedata
@@ -102,6 +103,12 @@ class HeaderIdTreeprocessor(Treeprocessor):
                     if level > 6:
                         level = 6
                     elem.tag = 'h%d' % level
+                if "id" in elem.attrib :
+                    a = etree.Element('a')
+                    a.set('href', "#" + elem.attrib['id'])
+                    a.set('class', 'header-link')
+                    #a.text = "Link"
+                    elem.append(a)
 
 
     def _get_meta(self):

@@ -218,7 +218,7 @@ class WikiDocHandler(NRequestHandler) :
         titles=model.Document.titles(w)
         mds = [(doc,) + do_markdown(doc, wiki_titles=titles) for doc in docs]
         if not docs :
-            self.redirect("/edit/" + url_escape(wikiname) + "?title=" + url_escape(title.title()),
+            self.redirect("/wiki/" + url_escape(wikiname) + "/edit?title=" + url_escape(title.title()),
                           permanent=False)
             return
 
@@ -420,7 +420,25 @@ class EditDocHandler(NRequestHandler) :
                 raise tornado.web.HTTPError(404)
         else :
             title = self.get_argument('title', None)
-        self.render("edit.html", wiki=w, doc=doc, title=title)
+
+        ttitle = title
+        if doc :
+            ttitle = doc.get_meta('title')
+        ltitles = set()
+        if ttitle :
+            links = model.Links.links_to(w, ttitle.lower().strip())
+            linkdocs = []
+            for link in links :
+                ltitle = link.get_meta("title")
+                if ltitle :
+                    ltitles.add(ltitle)
+                else :
+                    linkdocs.append(linkdocs)
+            ltitles = [ltitle.title() for ltitle in ltitles]
+            ltitles.sort()
+
+
+        self.render("edit.html", wiki=w, doc=doc, title=title, backlinks=ltitles)
 
 class DeleteDocHandler(NRequestHandler) :
     @tornado.web.authenticated
