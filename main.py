@@ -92,7 +92,7 @@ class GoogleHandler(NRequestHandler) :
             raise tornado.web.HTTPError(500, "Getting tokens failed")
         data = json.loads(response.body)
         self.access_data = data
-        print "data", data
+        #print "data", data
 
         headers = tornado.httputil.HTTPHeaders({
                 "Authorization" : "Bearer " + data['access_token']
@@ -169,6 +169,30 @@ class ChangesHandler(NRequestHandler) :
             raise tornado.web.HTTPError(403)
         changes = model.Changes.changes(w, num, offset)
         self.render("changes.html", wiki=w, changes=changes, num=num, offset=offset)
+
+class RecentPagesHandler(NRequestHandler) :
+    @tornado.web.authenticated
+    def get(self, wikiname) :
+        offset = self.get_argument('offset', '0')
+        num = self.get_argument('num', '50')
+        try :
+            offset = int(offset)
+        except ValueError :
+            offset = 0
+        try :
+            num = int(num)
+        except ValueError :
+            num = 50
+
+        wikiname = url_unescape(wikiname)
+        w = model.Wiki.with_name(wikiname)
+        if w == None :
+            raise tornado.web.HTTPError(404)
+        if not w.allows_user(self.current_user) :
+            raise tornado.web.HTTPError(403)
+        changes = model.Changes.changes(w, num, offset, newest=True)
+        self.render("pages.html", wiki=w, changes=changes, num=num, offset=offset)
+
 
 class SearchHandler(NRequestHandler) :
     @tornado.web.authenticated
@@ -332,7 +356,7 @@ class DocUuidHandler(NRequestHandler) :
             self.set_header("Content-Disposition", "inline; filename=\"" + url_escape(filename) + "\"")
         self.set_header("Content-Length", len(content))
         created = datetime.datetime.utcfromtimestamp(doc.version.created)
-        print 'created',created
+        #print 'created',created
         self.set_header("Last-Modified", created)
         ims_value = self.request.headers.get("If-Modified-Since")
         if ims_value is not None :
@@ -594,6 +618,7 @@ class NApplication(tornado.web.Application) :
             (r"/wiki/([^/]+)/undelete/(.+)", UndeleteDocHandler),
             (r"/wiki/([^/]+)/fork/(.+)", ForkHandler),
             (r"/wiki/([^/]+)/changes/?", ChangesHandler),
+            (r"/wiki/([^/]+)/recent/?", RecentPagesHandler),
             (r"/wiki/([^/]+)/search/?", SearchHandler),
             (r"/login", GoogleHandler),
             (r"/logout", SignoutHandler),

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}{{wiki.name}} recent changes{% end %}
+{% block title %}{{wiki.name}} recent pages{% end %}
 
 {% block body %}
-<h1>Recent changes for {{wiki.name}}</h1>
+<h1>Recent pages for {{wiki.name}}</h1>
 
 <ul>
 {% for change in changes %}
@@ -16,7 +16,7 @@
   {{change['description']}} <span class="timestamp">{{change['changed']}}</span> (<a href="/wiki/{{url_escape(wiki.name)}}/doc/{{change['doc'].id}}">doc {{change['doc'].id}}</a>, <a href="/wiki/{{url_escape(wiki.name)}}/version/{{change['version']}}">version {{change['version']}}</a>)</li>
 {% end %}
 </ul>
-<a href="/wiki/{{url_escape(wiki.name)}}/changes?num={{num}}&offset={{num+offset}}">Next {{num}}</a>
+<a href="/wiki/{{url_escape(wiki.name)}}/recent?num={{num}}&offset={{num+offset}}">Next {{num}}</a>
 
 {% end %}
 

@@ -7,7 +7,9 @@
   {% module xsrf_form_html() %}
   <div class="editbuttons">
     {% if doc %}
-    <a href="/wiki/{{url_escape(wiki.name)}}/doc/{{doc.id}}">Cancel</a>
+    <a id="edit_cancel_button" href="/wiki/{{url_escape(wiki.name)}}/doc/{{doc.id}}">Cancel</a>
+    {% else %}
+    <a id="edit_cancel_button" href="/wiki/{{url_escape(wiki.name)}}">Cancel</a>
     {% end %}
     <input type="submit" value="Save" title="Save the document (Ctrl-S)">
   </div>

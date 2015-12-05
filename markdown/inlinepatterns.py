@@ -346,7 +346,7 @@ class LinkPattern(Pattern):
 
         """
 
-        print self.markdown.link_protocols
+        #print self.markdown.link_protocols
         if hasattr(self.markdown, 'link_protocols') :
             for prefix, handler in self.markdown.link_protocols.iteritems() :
                 if url.startswith(prefix+':') :

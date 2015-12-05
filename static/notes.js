@@ -236,8 +236,124 @@ function addInlineAttachment(cm) {
   });
 }
 
+// drafts are in localStorage of with keys wikiname/{new,edit}/randomstring[/docid]
+function wikiPathName() {
+  var path = location.pathname.split("/");
+  return path.slice(path.indexOf("wiki")+1);
+}
+function getDrafts() {
+  var wiki = wikiPathName()[0];
+  var drafts = [];
+  for (var i = 0; i < localStorage.length; i++) {
+    var k = localStorage.key(i);
+    if (k.startsWith(wiki)) {
+      drafts.push(k);
+    }
+  }
+  return drafts;
+}
+function constructDraftKey() {
+  var path = wikiPathName();
+  var wname = path[0],
+      docid = 2 < path.length ? path[2] : null;
+  if (docid == null) {
+    return wname + "/new/" + getDraftCode();
+  } else {
+    return wname + "/edit/" + getDraftCode() + "/" + docid;
+  }
+}
+function makeDraftsList() {
+  var $drafts = $("#drafts_list").empty();
+  if ($drafts.length == 0) {
+    $drafts = $('<div id="drafts_list" class="sidebox">').appendTo($("#sidebar"));
+  }
+  $drafts.append('Drafts:').append($('<br>'));
+  var ds = getDrafts();
+  $drafts.toggle(ds.length > 0);
+  var $list = $('<ul>').appendTo($drafts);
+  for (var i = 0; i < ds.length; i++) {
+    var key = ds[i].split("/");
+    var data = JSON.parse(localStorage.getItem(ds[i]));
+    var $li = $('<li>').appendTo($list);
+    var $a = $('<a>').appendTo($li);
+    if (key[1] === "new") {
+      $a.attr("href", '/wiki/' + key[0] + '/edit?localdraft=' + key[2]);
+      $a.text("new (" + shortTime(new Date(data.edited)) +")");
+    } else if (key[1] === "edit") {
+      $a.attr("href", '/wiki/' + key[0] + '/edit/' + key[3] + '?localdraft=' + key[2]);
+      $a.text("doc " + key[3] + " (" + shortTime(new Date(data.edited)) +")");
+    }
+    $a.attr("title", data.content.slice(0, 50) + "...");
+  }
+}
+
+function queryParameter(key, def) {
+  if (arguments.length === 1) {
+    def = null;
+  }
+  var parts = window.location.search.slice(1).split("&");
+  for (var i = 0; i < parts.length; i++) {
+    var kv = parts[i].split("=");
+    if (decodeURIComponent(kv[0]) === key) {
+      return decodeURIComponent(kv[1]);
+    }
+  }
+  return def;
+}
+function addQueryParameter(key, val) {
+  return window.location.href + (window.location.search ? "&" : "?") + encodeURIComponent(key) + "=" + encodeURIComponent(val);
+}
+
+var curr_draft_code = null;
+function getDraftCode() {
+  if (curr_draft_code === null) {
+    var code = queryParameter("localdraft", null);
+    if (code) {
+      curr_draft_code = code;
+    }
+  }
+  if (curr_draft_code === null) {
+    curr_draft_code = generateGUID();
+    window.history.replaceState(null, document.title, addQueryParameter("localdraft", curr_draft_code));
+  }
+  return curr_draft_code;
+}
+function saveDraft(contents) {
+  var code = getDraftCode();
+  var key = constructDraftKey();
+  localStorage.setItem(key, JSON.stringify({
+    content : contents,
+    edited : new Date().getTime()
+  }));
+
+  makeDraftsList();
+}
+function getDraft() {
+  var key = constructDraftKey();
+  try {
+    return JSON.parse(localStorage.getItem(key)).content;
+  } catch (x) {
+    return null;
+  }
+}
+function discardDraft() {
+  localStorage.removeItem(constructDraftKey());
+}
+
+var current_official_contents = null;
+
 $(function () {
+  makeDraftsList();
+
   if (document.getElementById('edit')) {
+
+    current_official_contents = $('#edit textarea').val();
+
+    var draft = getDraft();
+    if (draft !== null) {
+      $('#edit textarea').val(draft);
+    }
+
     var cm = CodeMirror.fromTextArea($('#edit textarea')[0], {
       mode: 'markdown-math',
       indentWithTabs: false,
@@ -265,9 +381,25 @@ $(function () {
       cm.markClean();
     });
 
+    cm.on("change", _.debounce(function (cm) {
+      saveDraft(cm.getValue());
+    }, 500));
+
+    $("#edit_cancel_button").on("click", function (e) {
+      if (cm.getValue() !== current_official_contents) {
+        if (!confirm("There are unsaved changes. Discard draft?")) {
+          e.preventDefault();
+          return;
+        }
+      }
+      discardDraft();
+      cm.markClean();
+    });
+
     $(window).on('beforeunload', function () {
       if (!cm.isClean()) {
-        return "There are unsaved changes.";
+        saveDraft(cm.getValue());
+        //return "There are unsaved changes.";
       }
     });
   }

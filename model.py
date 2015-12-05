@@ -314,14 +314,21 @@ class Links(object) :
 
 class Changes(object) :
     @staticmethod
-    def changes(wiki, n, offset=0) :
+    def changes(wiki, n, offset=0, newest=False) :
         changes = []
-        for row in DB.execute("""select c.changed, c.docid, c.version, c.description, v.mime
+        if not newest :
+            res = DB.execute("""select c.changed, c.docid, c.version, c.description, v.mime
                                  from changes as c join documents as d on c.docid = d.id
                                    join versions as v on c.version=v.id
                                  where d.wiki=?
-                                 order by changed desc limit ? offset ? """, (wiki.id, n, offset)) :
-
+                                 order by changed desc limit ? offset ? """, (wiki.id, n, offset))
+        else :
+            res = DB.execute("""select c.changed, c.docid, c.version, c.description, v.mime
+                                 from changes as c join documents as d on c.docid = d.id
+                                   join versions as v on c.version=v.id
+                                 where d.wiki=? and d.version=v.id and c.description in ('modified', 'created', 'undeleted') and not d.deleted
+                                 order by changed desc limit ? offset ?""", (wiki.id, n, offset))
+        for row in res :
             doc = Document.with_id(wiki, row['docid'])
 
             desc = 'Doc ' + str(doc.id)
